@@ -1,10 +1,3 @@
-//
-//   Core Framework - Script file
-//
-//   @license    MIT (https://mit-license.org/)
-//   @author     Louis Ouellet <louis@laswitchtech.com>
-//
-
 const ServicesFormat = function(element, commission, list){
 
     // Find the list component
@@ -49,7 +42,7 @@ const ServicesModal = function(id, callback = null){
 
     // AJAX Request
     $.ajax({
-        url: '/endpoint.php/services/cap',
+        url: '/api/services/cap',
         headers: {'X-CSRF-Authorization': CSRF_KEY},
         type: 'GET',dataType: 'json',
         success: function(commissionCap) {
@@ -57,14 +50,14 @@ const ServicesModal = function(id, callback = null){
 
             // AJAX Request
             $.ajax({
-                url: '/endpoint.php/services/fetch?id=' + id,
+                url: '/api/services/fetch?id=' + id,
                 headers: {'X-CSRF-Authorization': CSRF_KEY},
                 type: 'GET',dataType: 'json',
                 success: function(response) {
 
                     // Set the response in the storage
-                    builder.Storage.set(response.record ?? [], null,'services:'+id);
-                    var product = builder.Storage.get('product','services:'+id);
+                    builder.Storage.set(response.record ?? [], null,'service:'+id);
+                    var product = builder.Storage.get('product','service:'+id);
 
                     // Create a Modal
                     builder.Component(
@@ -73,7 +66,7 @@ const ServicesModal = function(id, callback = null){
                             onEnter: false,
                             destroy:true,
                             icon: "cash-coin",
-                            title: builder.Locale.get("Product Details"),
+                            title: builder.Locale.get("Service Details"),
                             cancel: false,
                             submit: true,
                             size: "lg",
@@ -146,6 +139,7 @@ const ServicesModal = function(id, callback = null){
                                             var commissionCurrent = 0;
                                             for(const [key, item] of Object.entries(component.list.get())){
                                                 commissionCurrent += parseInt((item.commission.rate * 100));
+                                                console.log(item);
                                                 currentValues.commissions.push({rate: item.commission.rate, user: item.commission.user.id});
                                             }
 
@@ -175,14 +169,14 @@ const ServicesModal = function(id, callback = null){
 
                                                 // AJAX Request
                                                 $.ajax({
-                                                    url: '/endpoint.php/services/update?id=' + id,
+                                                    url: '/api/services/update?id=' + id,
                                                     headers: {'X-CSRF-Authorization': CSRF_KEY},
                                                     type: 'POST',dataType: 'json',
                                                     data: currentValues,
                                                     success: function(response) {
 
                                                         // Set the response in the storage
-                                                        builder.Storage.set(response.record, null,'services:'+id);
+                                                        builder.Storage.set(response.record, null,'service:'+id);
 
                                                         // Execute the callback
                                                         if (typeof callback === 'function') {
@@ -227,7 +221,7 @@ const ServicesModal = function(id, callback = null){
                                             label: builder.Locale.get('QTY'),
                                             icon: 'hash',
                                             type: 'number',
-                                            value: builder.Storage.get('qty','services:'+id) || 1,
+                                            value: builder.Storage.get('qty','service:'+id) || 1,
                                         },
                                     );
 
@@ -241,7 +235,7 @@ const ServicesModal = function(id, callback = null){
                                             label: builder.Locale.get('Price/Rate'),
                                             icon: 'currency-dollar',
                                             type: 'number',
-                                            value: (builder.Storage.get(product.inColumn,'services:'+id) * 100) || 0,
+                                            value: (builder.Storage.get(product.inColumn,'service:'+id) * 100) || 0,
                                         },
                                         function(input){
                                             input.input.attr('step', '1');
@@ -278,7 +272,6 @@ const ServicesModal = function(id, callback = null){
                                                     console.log(item.commission.rate);
                                                 }
                                                 var commissionMax = (currentCap - commissionCurrent);
-                                                console.log(currentCap, commissionCurrent, commissionMax);
 
                                                 // Create a Modal
                                                 builder.Component(
@@ -335,11 +328,11 @@ const ServicesModal = function(id, callback = null){
 
                                                         // AJAX Request
                                                         $.ajax({
-                                                            url: '/endpoint.php/auth/colleagues',
+                                                            url: '/api/auth/users',
                                                             type: 'GET',dataType: 'json',
-                                                            success: function(members) {
+                                                            success: function(response) {
                                                                 var options = [];
-                                                                for(const [id, member] of Object.entries(members)){
+                                                                for(const [id, member] of Object.entries(response.records)){
                                                                     options.push({id: id, text: member.username});
                                                                 }
 
@@ -353,7 +346,7 @@ const ServicesModal = function(id, callback = null){
                                                                                 for(const [key, value] of Object.entries(values)){
                                                                                     switch(key){
                                                                                         case 'rate': values[key] = (parseFloat(value) / 100); break;
-                                                                                        case 'user': values[key] = members[parseInt(value)]; break;
+                                                                                        case 'user': values[key] = response.records[parseInt(value)]; break;
                                                                                         default: values[key] = parseInt(value); break;
                                                                                     }
                                                                                 }
@@ -430,7 +423,7 @@ const ServicesModal = function(id, callback = null){
                                     },
                                 },
                                 function(list,component){
-                                    for(const [key, commission] of Object.entries(builder.Storage.get('commissions','services:'+id))){
+                                    for(const [key, commission] of Object.entries(builder.Storage.get('commissions','service:'+id) ?? [])){
                                         list.add(
                                             {
                                                 field: (commission.rate * 100) + '% ' + builder.Locale.get('to') + ' ' + commission.user.username,
@@ -453,15 +446,15 @@ const ServicesModalArchive = function(id, callback = null){
 
     // AJAX Request
     $.ajax({
-        url: '/endpoint.php/services/fetch?id=' + id,
+        url: '/api/services/fetch?id=' + id,
         headers: {'X-CSRF-Authorization': CSRF_KEY},
         type: 'GET',dataType: 'json',
         success: function(response) {
 
             // Set the response in the storage
-            builder.Storage.set(response.record ?? [], null,'services:'+id);
-            var item = builder.Storage.get(null,'services:'+id);
-            var product = builder.Storage.get('product','services:'+id);
+            builder.Storage.set(response.record ?? [], null,'service:'+id);
+            var item = builder.Storage.get(null,'service:'+id);
+            var product = builder.Storage.get('product','service:'+id);
 
             // Create a modal
             builder.Component(
@@ -501,12 +494,12 @@ const ServicesModalArchive = function(id, callback = null){
 
                                 // AJAX Request
                                 $.ajax({
-                                    url: '/endpoint.php/services/archive?id='+id,
+                                    url: '/api/services/archive?id='+id,
                                     type: 'GET',dataType: 'json',
                                     success: function(response) {
 
                                         // Set the response in the storage
-                                        builder.Storage.remove('services:'+id);
+                                        builder.Storage.remove('service:'+id);
 
                                         // Execute the callback
                                         if (typeof callback === 'function') {
@@ -540,9 +533,9 @@ const ServicesModalArchive = function(id, callback = null){
         },
     });
 };
-const ServicesFeed = function(key, container, callback = null){
+const ServicesFeed = function(key, container, fields = {}, callback = null){
 
-    var table = key.split(':')[0];
+    var table = fields.targetTable ?? key.split(':')[0];
     var items = builder.Storage.get('dependencies:services',key);
 
     // Set Actions
@@ -717,26 +710,17 @@ function process_function_ServicesAddProduct(task, value, callback = null){
         }
     }
 
-    // Check if the task is attached to a client
-    if(task.targetTable === 'clients'){
-        targetTable = task.targetTable;
-        targetId = task.targetId;
-    }
-
-    // Check if the task is attached to a lead
-    if(task.targetTable === 'leads'){
-        targetTable = 'clients';
-        targetId = task.target.client.id;
-    }
-
     var key = builder.Storage.getKey();
     var table = key.split(':')[0];
 
     ProductsLookup(value, function(products){
+        console.log(value, products);
         ProductsSelect(products, function(selection){
+            console.log(selection);
 
             // Select the product from the products list
             var product = products[selection.id];
+            console.log(product);
 
             // Create the item to add to the services
             var item = {
@@ -752,10 +736,11 @@ function process_function_ServicesAddProduct(task, value, callback = null){
 
             // Set the price and rate based on the product
             item[product.inColumn] = selection.rate;
+            console.log(item);
 
             // AJAX Request
             $.ajax({
-                url: '/endpoint.php/services/create',
+                url: '/api/services/create',
                 headers: {'X-CSRF-Authorization': CSRF_KEY},
                 type: 'POST',dataType: 'json',
                 data: item,
