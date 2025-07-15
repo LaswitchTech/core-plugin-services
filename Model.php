@@ -14,7 +14,7 @@ class ServicesModel extends BaseModel {
         parent::__construct();
 
         // Initialize the Model
-        $this->init('inventories');
+        $this->init('services');
     }
 
     /**
@@ -57,7 +57,9 @@ class ServicesModel extends BaseModel {
             ->select('*')
             ->join('owner', 'users', 'username')
             ->join('product', 'products', 'id')
+            ->join('agreement', 'files', 'id')
             ->join('organization', 'organizations', 'id')
+            ->index($this->primary)
             ->filter()
             ->where('id', 9999, '<>')
             ->where('j__product.type', "Service", '=')
@@ -103,6 +105,7 @@ class ServicesModel extends BaseModel {
             ->select('*')
             ->join('owner', 'users', 'username')
             ->join('product', 'products', 'id')
+            ->join('agreement', 'files', 'id')
             ->join('organization', 'organizations', 'id')
             ->filter()
             ->where('id', 9999, '<>')
