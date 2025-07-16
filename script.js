@@ -533,10 +533,9 @@ const ServicesModalArchive = function(id, callback = null){
         },
     });
 };
-const ServicesFeed = function(key, container, fields = {}, records = {}, callback = null){
+const ServicesFeed = function(items, container, fields = {}, records = {}, callback = null){
 
-    // var table = fields.targetTable ?? key.split(':')[0];
-    // var items = builder.Storage.get('dependencies:services',key);
+    var table = fields.targetTable;
 
     // Set Actions
     var actions = {
