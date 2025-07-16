@@ -533,10 +533,10 @@ const ServicesModalArchive = function(id, callback = null){
         },
     });
 };
-const ServicesFeed = function(key, container, fields = {}, callback = null){
+const ServicesFeed = function(key, container, fields = {}, records = {}, callback = null){
 
-    var table = fields.targetTable ?? key.split(':')[0];
-    var items = builder.Storage.get('dependencies:services',key);
+    // var table = fields.targetTable ?? key.split(':')[0];
+    // var items = builder.Storage.get('dependencies:services',key);
 
     // Set Actions
     var actions = {
@@ -658,8 +658,11 @@ const ServicesFeed = function(key, container, fields = {}, callback = null){
         }},
     ];
 
+    // Add a row
+    function addRow(){}
+
     // Create the table
-    builder.Component(
+    var component = builder.Component(
         "table",
         container,
         {
