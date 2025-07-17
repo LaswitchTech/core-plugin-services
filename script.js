@@ -53,11 +53,16 @@ const ServicesModal = function(id, callback = null){
                 url: '/api/services/fetch?id=' + id,
                 headers: {'X-CSRF-Authorization': CSRF_KEY},
                 type: 'GET',dataType: 'json',
-                success: function(response) {
+                success: async function(response) {
+
+                    // Configure Storage
+                    builder.Storage.setKey(`service:${response.record.id}`);
+                    await builder.Storage.set(response);
+                    console.log(await builder.Storage.get());
 
                     // Set the response in the storage
-                    builder.Storage.set(response.record ?? [], null,'service:'+id);
-                    var product = builder.Storage.get('product','service:'+id);
+                    var service = await builder.Storage.get('record');
+                    var product = service.product;
 
                     // Create a Modal
                     builder.Component(
@@ -173,10 +178,12 @@ const ServicesModal = function(id, callback = null){
                                                     headers: {'X-CSRF-Authorization': CSRF_KEY},
                                                     type: 'POST',dataType: 'json',
                                                     data: currentValues,
-                                                    success: function(response) {
+                                                    success: async function(response) {
 
-                                                        // Set the response in the storage
-                                                        builder.Storage.set(response.record, null,'service:'+id);
+                                                        // Configure Storage
+                                                        builder.Storage.setKey(`service:${response.record.id}`);
+                                                        await builder.Storage.set(response);
+                                                        console.log(await builder.Storage.get());
 
                                                         // Execute the callback
                                                         if (typeof callback === 'function') {
@@ -235,11 +242,12 @@ const ServicesModal = function(id, callback = null){
                                             label: builder.Locale.get('Price/Rate'),
                                             icon: 'currency-dollar',
                                             type: 'number',
-                                            value: (builder.Storage.get(product.inColumn,'service:'+id) * 100) || 0,
+                                            value: (service.rate * 100) || 0,
                                         },
                                         function(input){
                                             input.input.attr('step', '1');
                                             input.input.attr('min', '0');
+                                            input.input.attr('max', (product.commissionCap > service.rate) ? product.commissionCap : service.rate);
                                         }
                                     );
 
@@ -423,7 +431,7 @@ const ServicesModal = function(id, callback = null){
                                     },
                                 },
                                 function(list,component){
-                                    for(const [key, commission] of Object.entries(builder.Storage.get('commissions','service:'+id) ?? [])){
+                                    for(const [key, commission] of Object.entries(service.commissions ?? [])){
                                         list.add(
                                             {
                                                 field: (commission.rate * 100) + '% ' + builder.Locale.get('to') + ' ' + commission.user.username,
@@ -498,9 +506,6 @@ const ServicesModalArchive = function(id, callback = null){
                                     type: 'GET',dataType: 'json',
                                     success: function(response) {
 
-                                        // Set the response in the storage
-                                        builder.Storage.remove('service:'+id);
-
                                         // Execute the callback
                                         if (typeof callback === 'function') {
                                             callback(response.record);
@@ -535,17 +540,13 @@ const ServicesModalArchive = function(id, callback = null){
 };
 const ServicesFeed = function(items, container, fields = {}, records = {}, callback = null){
 
-    var table = fields.targetTable;
-
     // Set Actions
     var actions = {
         details:{
             label:'Details',
             icon:'eye',
             action:function(event, table, dt, node, row, data){
-                ServicesModal(data.id, function(product){
-                    builder.Storage.set(product, 'dependencies:services:'+data.id,key);
-                });
+                ServicesModal(data.id);
             }
         },
         archive:{
@@ -568,7 +569,7 @@ const ServicesFeed = function(items, container, fields = {}, records = {}, callb
             },
             text: '<i class="bi bi-plus-lg"></i>',
             action:function(e, dt, node, config){
-                process_function_ServicesAddProduct({target:builder.Storage.get('record',key),targetTable:table,targetId:builder.Storage.get('record:id',key)}, null);
+                process_function_ServicesAddProduct({targetTable:fields.targetTable, targetId:fields.targetId}, null);
             },
         }
     ];
@@ -712,9 +713,6 @@ function process_function_ServicesAddProduct(task, value, callback = null){
         }
     }
 
-    var key = builder.Storage.getKey();
-    var table = key.split(':')[0];
-
     ProductsLookup(value, function(products){
         console.log(value, products);
         ProductsSelect(products, function(selection){
@@ -747,13 +745,6 @@ function process_function_ServicesAddProduct(task, value, callback = null){
                 type: 'POST',dataType: 'json',
                 data: item,
                 success: function(response) {
-
-                    // Check if the targetTable of the task is set to table
-                    if(task.targetTable === table){
-
-                        // If the targetTable is the same as the table, add the item to the table
-                        builder.Storage.set(response.record, 'dependencies:services:'+response.record.id, key);
-                    }
 
                     // If a callback is provided, call it with the response
                     if (typeof callback === 'function') {
