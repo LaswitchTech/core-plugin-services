@@ -53,11 +53,16 @@ const ServicesModal = function(id, callback = null){
                 url: '/api/services/fetch?id=' + id,
                 headers: {'X-CSRF-Authorization': CSRF_KEY},
                 type: 'GET',dataType: 'json',
-                success: function(response) {
+                success: async function(response) {
+
+                    // Configure Storage
+                    builder.Storage.setKey(`service:${response.record.id}`);
+                    await builder.Storage.set(response);
+                    console.log(await builder.Storage.get());
 
                     // Set the response in the storage
-                    builder.Storage.set(response.record ?? [], null,'service:'+id);
-                    var product = builder.Storage.get('product','service:'+id);
+                    var service = await builder.Storage.get('record');
+                    var product = service.product;
 
                     // Create a Modal
                     builder.Component(
@@ -135,7 +140,7 @@ const ServicesModal = function(id, callback = null){
                                             var currentValues = form.val();
                                             currentValues.commissions = [];
                                             currentValues[product.inColumn] = parseInt((currentValues[product.inColumn] * 100));
-                                            var currentCap = Math.min(commissionCap, currentValues[product.inColumn]);
+                                            var currentCap = Math.min(product.commissionCap, currentValues[product.inColumn]);
                                             var commissionCurrent = 0;
                                             for(const [key, item] of Object.entries(component.list.get())){
                                                 commissionCurrent += parseInt((item.commission.rate * 100));
@@ -173,10 +178,12 @@ const ServicesModal = function(id, callback = null){
                                                     headers: {'X-CSRF-Authorization': CSRF_KEY},
                                                     type: 'POST',dataType: 'json',
                                                     data: currentValues,
-                                                    success: function(response) {
+                                                    success: async function(response) {
 
-                                                        // Set the response in the storage
-                                                        builder.Storage.set(response.record, null,'service:'+id);
+                                                        // Configure Storage
+                                                        builder.Storage.setKey(`service:${response.record.id}`);
+                                                        await builder.Storage.set(response);
+                                                        console.log(await builder.Storage.get());
 
                                                         // Execute the callback
                                                         if (typeof callback === 'function') {
@@ -211,35 +218,22 @@ const ServicesModal = function(id, callback = null){
                                         }
                                     );
 
-                                    // Add a text input for the qty
-                                    form.add(
-                                        {
-                                            class: {
-                                                field: 'col-12 col-md-6',
-                                            },
-                                            name: 'qty',
-                                            label: builder.Locale.get('QTY'),
-                                            icon: 'hash',
-                                            type: 'number',
-                                            value: builder.Storage.get('qty','service:'+id) || 1,
-                                        },
-                                    );
-
                                     // Add a float input for the price/rate
                                     form.add(
                                         {
                                             class: {
-                                                field: 'col-12 col-md-6',
+                                                field: 'col-12',
                                             },
                                             name: product.inColumn,
-                                            label: builder.Locale.get('Price/Rate'),
-                                            icon: 'currency-dollar',
+                                            label: builder.Locale.get('Rate'),
+                                            icon: 'percent',
                                             type: 'number',
-                                            value: (builder.Storage.get(product.inColumn,'service:'+id) * 100) || 0,
+                                            value: (service.rate * 100) || 0,
                                         },
                                         function(input){
                                             input.input.attr('step', '1');
                                             input.input.attr('min', '0');
+                                            input.input.attr('max', (product.commissionCap > service.rate) ? product.commissionCap : service.rate);
                                         }
                                     );
 
@@ -249,192 +243,194 @@ const ServicesModal = function(id, callback = null){
                             );
 
                             // Create a list inside the modal
-                            component.list = builder.Component(
-                                "list",
-                                component.body,
-                                {
-                                    class: {
-                                        component: "bg-transparent",
-                                    },
-                                    tools: {
-                                        add: {
-                                            icon: "plus-lg",
-                                            label: null,
-                                            color: "success",
-                                            class: null,
-                                            callback: function(tool,list){
-                                                var currentValues = component.form.val();
-                                                currentValues[product.inColumn] = parseInt((currentValues[product.inColumn] * 100));
-                                                var currentCap = Math.min(commissionCap, currentValues[product.inColumn]);
-                                                var commissionCurrent = 0;
-                                                for(const [key, item] of Object.entries(list.get())){
-                                                    commissionCurrent += parseInt((item.commission.rate * 100));
-                                                    console.log(item.commission.rate);
-                                                }
-                                                var commissionMax = (currentCap - commissionCurrent);
+                            if(product.hasCommissions){
+                                component.list = builder.Component(
+                                    "list",
+                                    component.body,
+                                    {
+                                        class: {
+                                            component: "bg-transparent",
+                                        },
+                                        tools: {
+                                            add: {
+                                                icon: "plus-lg",
+                                                label: null,
+                                                color: "success",
+                                                class: null,
+                                                callback: function(tool,list){
+                                                    var currentValues = component.form.val();
+                                                    currentValues[product.inColumn] = parseInt((currentValues[product.inColumn] * 100));
+                                                    var currentCap = Math.min(product.commissionCap, currentValues[product.inColumn]);
+                                                    var commissionCurrent = 0;
+                                                    for(const [key, item] of Object.entries(list.get())){
+                                                        commissionCurrent += parseInt((item.commission.rate * 100));
+                                                        console.log(item.commission.rate);
+                                                    }
+                                                    var commissionMax = (currentCap - commissionCurrent);
 
-                                                // Create a Modal
-                                                builder.Component(
-                                                    "modal",
-                                                    {
-                                                        onEnter: false,
-                                                        destroy:true,
-                                                        icon: "currency-dollar",
-                                                        title: builder.Locale.get("Set a Commission"),
-                                                        cancel: false,
-                                                        submit: true,
-                                                        size: "md",
-                                                        callback: {
-                                                            submit: function(element,modal){
+                                                    // Create a Modal
+                                                    builder.Component(
+                                                        "modal",
+                                                        {
+                                                            onEnter: false,
+                                                            destroy:true,
+                                                            icon: "currency-dollar",
+                                                            title: builder.Locale.get("Set a Commission"),
+                                                            cancel: false,
+                                                            submit: true,
+                                                            size: "md",
+                                                            callback: {
+                                                                submit: function(element,modal){
 
-                                                                // Create a spinner animate-rotate
-                                                                var spinner = $(document.createElement('div')).attr({
-                                                                    "class": "animate-rotate rounded-circle border border-secondary border-4 d-none",
-                                                                    "style": "width: 96px; height: 96px; border-top-color: var(--bs-primary)!important;",
-                                                                }).appendTo(element);
-
-                                                                // Hide the dialog
-                                                                element.dialog.addClass('opacity-0');
-
-                                                                // Setup a spinner while waiting for the modal to be submitted
-                                                                setTimeout(() => {
+                                                                    // Create a spinner animate-rotate
+                                                                    var spinner = $(document.createElement('div')).attr({
+                                                                        "class": "animate-rotate rounded-circle border border-secondary border-4 d-none",
+                                                                        "style": "width: 96px; height: 96px; border-top-color: var(--bs-primary)!important;",
+                                                                    }).appendTo(element);
 
                                                                     // Hide the dialog
-                                                                    element.dialog.hide();
+                                                                    element.dialog.addClass('opacity-0');
 
-                                                                    // Add flex to the modal
-                                                                    element.addClass('d-flex align-items-center justify-content-center');
+                                                                    // Setup a spinner while waiting for the modal to be submitted
+                                                                    setTimeout(() => {
 
-                                                                    // Show the spinner
-                                                                    spinner.removeClass('d-none');
+                                                                        // Hide the dialog
+                                                                        element.dialog.hide();
 
-                                                                    // Submit the form
-                                                                    element.form.submit();
-                                                                }, 300);
+                                                                        // Add flex to the modal
+                                                                        element.addClass('d-flex align-items-center justify-content-center');
 
+                                                                        // Show the spinner
+                                                                        spinner.removeClass('d-none');
+
+                                                                        // Submit the form
+                                                                        element.form.submit();
+                                                                    }, 300);
+
+                                                                },
                                                             },
                                                         },
-                                                    },
-                                                    function(modal,component){
-                                                        const componentModal = component;
-                                                        component.header.addClass('text-bg-primary');
-                                                        component.body.addClass('bg-dark');
-                                                        component.footer.submit
-                                                            .addClass('btn-success')
-                                                            .removeClass('btn-link')
-                                                            .text(builder.Locale.get('Add'))
-                                                            .attr('style','border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;');
-                                                        component.footer.submit.icon = $(document.createElement('i')).addClass('bi bi-plus-lg me-1').prependTo(component.footer.submit);
+                                                        function(modal,component){
+                                                            const componentModal = component;
+                                                            component.header.addClass('text-bg-primary');
+                                                            component.body.addClass('bg-dark');
+                                                            component.footer.submit
+                                                                .addClass('btn-success')
+                                                                .removeClass('btn-link')
+                                                                .text(builder.Locale.get('Add'))
+                                                                .attr('style','border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;');
+                                                            component.footer.submit.icon = $(document.createElement('i')).addClass('bi bi-plus-lg me-1').prependTo(component.footer.submit);
 
-                                                        // AJAX Request
-                                                        $.ajax({
-                                                            url: '/api/auth/users',
-                                                            type: 'GET',dataType: 'json',
-                                                            success: function(response) {
-                                                                var options = [];
-                                                                for(const [id, member] of Object.entries(response.records)){
-                                                                    options.push({id: id, text: member.username});
-                                                                }
+                                                            // AJAX Request
+                                                            $.ajax({
+                                                                url: '/api/auth/users',
+                                                                type: 'GET',dataType: 'json',
+                                                                success: function(response) {
+                                                                    var options = [];
+                                                                    for(const [id, member] of Object.entries(response.records)){
+                                                                        options.push({id: id, text: member.username});
+                                                                    }
 
-                                                                // Create a form inside the modal
-                                                                component.form = builder.Component(
-                                                                    "form",
-                                                                    component.body,
-                                                                    {
-                                                                        callback:{
-                                                                            val: function(values){
-                                                                                for(const [key, value] of Object.entries(values)){
-                                                                                    switch(key){
-                                                                                        case 'rate': values[key] = (parseFloat(value) / 100); break;
-                                                                                        case 'user': values[key] = response.records[parseInt(value)]; break;
-                                                                                        default: values[key] = parseInt(value); break;
+                                                                    // Create a form inside the modal
+                                                                    component.form = builder.Component(
+                                                                        "form",
+                                                                        component.body,
+                                                                        {
+                                                                            callback:{
+                                                                                val: function(values){
+                                                                                    for(const [key, value] of Object.entries(values)){
+                                                                                        switch(key){
+                                                                                            case 'rate': values[key] = (parseFloat(value) / 100); break;
+                                                                                            case 'user': values[key] = response.records[parseInt(value)]; break;
+                                                                                            default: values[key] = parseInt(value); break;
+                                                                                        }
                                                                                     }
-                                                                                }
-                                                                                return values;
-                                                                            },
-                                                                            submit: function(form){
+                                                                                    return values;
+                                                                                },
+                                                                                submit: function(form){
 
-                                                                                // Set the commission
-                                                                                const commission = form.val();
+                                                                                    // Set the commission
+                                                                                    const commission = form.val();
 
-                                                                                // Add the commission to the list
-                                                                                list.add(
-                                                                                    {
-                                                                                        field: (commission.rate * 100) + '% ' + builder.Locale.get('to') + ' ' + commission.user.username,
-                                                                                    },
-                                                                                    function(item,list){
-                                                                                        ServicesFormat(item, commission, list);
-                                                                                    },
-                                                                                );
+                                                                                    // Add the commission to the list
+                                                                                    list.add(
+                                                                                        {
+                                                                                            field: (commission.rate * 100) + '% ' + builder.Locale.get('to') + ' ' + commission.user.username,
+                                                                                        },
+                                                                                        function(item,list){
+                                                                                            ServicesFormat(item, commission, list);
+                                                                                        },
+                                                                                    );
 
-                                                                                // Close the modal
-                                                                                modal.hide();
+                                                                                    // Close the modal
+                                                                                    modal.hide();
+                                                                                },
                                                                             },
                                                                         },
-                                                                    },
-                                                                    function(form,component){
+                                                                        function(form,component){
 
-                                                                        // Add a select input for the product
-                                                                        form.add(
-                                                                            {
-                                                                                name: 'user',
-                                                                                label: builder.Locale.get('User'),
-                                                                                icon: 'person',
-                                                                                type: 'select2',
-                                                                                modal: componentModal,
-                                                                                options: options,
-                                                                            }
-                                                                        );
+                                                                            // Add a select input for the product
+                                                                            form.add(
+                                                                                {
+                                                                                    name: 'user',
+                                                                                    label: builder.Locale.get('User'),
+                                                                                    icon: 'person',
+                                                                                    type: 'select2',
+                                                                                    modal: componentModal,
+                                                                                    options: options,
+                                                                                }
+                                                                            );
 
-                                                                        // Add a float input for the price/rate
-                                                                        form.add(
-                                                                            {
-                                                                                name: 'rate',
-                                                                                label: builder.Locale.get('Rate'),
-                                                                                icon: 'currency-dollar',
-                                                                                type: 'number',
-                                                                            },
-                                                                            function(input){
-                                                                                input.addClass('mt-3');
-                                                                                input.input.attr('step', 1);
-                                                                                input.input.attr('min', 0);
-                                                                                input.input.attr('max', commissionMax);
-                                                                            }
-                                                                        );
+                                                                            // Add a float input for the price/rate
+                                                                            form.add(
+                                                                                {
+                                                                                    name: 'rate',
+                                                                                    label: builder.Locale.get('Rate'),
+                                                                                    icon: 'currency-dollar',
+                                                                                    type: 'number',
+                                                                                },
+                                                                                function(input){
+                                                                                    input.addClass('mt-3');
+                                                                                    input.input.attr('step', 1);
+                                                                                    input.input.attr('min', 0);
+                                                                                    input.input.attr('max', (product.commissionCap > service.rate) ? product.commissionCap - commissionCurrent : service.rate - commissionCurrent);
+                                                                                }
+                                                                            );
 
-                                                                        // Show the modal
-                                                                        modal.show();
-                                                                    },
-                                                                );
-                                                            }
-                                                        });
-                                                    }
-                                                );
+                                                                            // Show the modal
+                                                                            modal.show();
+                                                                        },
+                                                                    );
+                                                                }
+                                                            });
+                                                        }
+                                                    );
+                                                },
                                             },
                                         },
+                                        icon: 'person',
+                                        callback: {
+                                            tool: null,
+                                            action: null,
+                                            item: null,
+                                            click: null,
+                                            dblclick: null,
+                                        },
                                     },
-                                    icon: 'person',
-                                    callback: {
-                                        tool: null,
-                                        action: null,
-                                        item: null,
-                                        click: null,
-                                        dblclick: null,
+                                    function(list,component){
+                                        for(const [key, commission] of Object.entries(service.commissions ?? [])){
+                                            list.add(
+                                                {
+                                                    field: (commission.rate * 100) + '% ' + builder.Locale.get('to') + ' ' + commission.user.username,
+                                                },
+                                                function(item,list){
+                                                    ServicesFormat(item, commission, list);
+                                                },
+                                            );
+                                        }
                                     },
-                                },
-                                function(list,component){
-                                    for(const [key, commission] of Object.entries(builder.Storage.get('commissions','service:'+id) ?? [])){
-                                        list.add(
-                                            {
-                                                field: (commission.rate * 100) + '% ' + builder.Locale.get('to') + ' ' + commission.user.username,
-                                            },
-                                            function(item,list){
-                                                ServicesFormat(item, commission, list);
-                                            },
-                                        );
-                                    }
-                                },
-                            );
+                                );
+                            }
                         }
                     );
                 }
@@ -498,9 +494,6 @@ const ServicesModalArchive = function(id, callback = null){
                                     type: 'GET',dataType: 'json',
                                     success: function(response) {
 
-                                        // Set the response in the storage
-                                        builder.Storage.remove('service:'+id);
-
                                         // Execute the callback
                                         if (typeof callback === 'function') {
                                             callback(response.record);
@@ -535,17 +528,13 @@ const ServicesModalArchive = function(id, callback = null){
 };
 const ServicesFeed = function(items, container, fields = {}, records = {}, callback = null){
 
-    var table = fields.targetTable;
-
     // Set Actions
     var actions = {
         details:{
             label:'Details',
             icon:'eye',
             action:function(event, table, dt, node, row, data){
-                ServicesModal(data.id, function(product){
-                    builder.Storage.set(product, 'dependencies:services:'+data.id,key);
-                });
+                ServicesModal(data.id);
             }
         },
         archive:{
@@ -568,7 +557,7 @@ const ServicesFeed = function(items, container, fields = {}, records = {}, callb
             },
             text: '<i class="bi bi-plus-lg"></i>',
             action:function(e, dt, node, config){
-                process_function_ServicesAddProduct({target:builder.Storage.get('record',key),targetTable:table,targetId:builder.Storage.get('record:id',key)}, null);
+                process_function_ServicesAddProduct({targetTable:fields.targetTable, targetId:fields.targetId}, null);
             },
         }
     ];
@@ -657,9 +646,6 @@ const ServicesFeed = function(items, container, fields = {}, records = {}, callb
         }},
     ];
 
-    // Add a row
-    function addRow(){}
-
     // Create the table
     var component = builder.Component(
         "table",
@@ -712,9 +698,6 @@ function process_function_ServicesAddProduct(task, value, callback = null){
         }
     }
 
-    var key = builder.Storage.getKey();
-    var table = key.split(':')[0];
-
     ProductsLookup(value, function(products){
         console.log(value, products);
         ProductsSelect(products, function(selection){
@@ -747,13 +730,6 @@ function process_function_ServicesAddProduct(task, value, callback = null){
                 type: 'POST',dataType: 'json',
                 data: item,
                 success: function(response) {
-
-                    // Check if the targetTable of the task is set to table
-                    if(task.targetTable === table){
-
-                        // If the targetTable is the same as the table, add the item to the table
-                        builder.Storage.set(response.record, 'dependencies:services:'+response.record.id, key);
-                    }
 
                     // If a callback is provided, call it with the response
                     if (typeof callback === 'function') {
