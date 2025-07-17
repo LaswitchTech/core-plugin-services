@@ -733,7 +733,7 @@ function process_function_ServicesAddProduct(task, value, callback = null){
 
                     // If a callback is provided, call it with the response
                     if (typeof callback === 'function') {
-                        callback(task, key, response.record);
+                        callback(task, value, response.record);
                     }
                 }
             });
