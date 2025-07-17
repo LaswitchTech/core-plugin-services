@@ -218,29 +218,15 @@ const ServicesModal = function(id, callback = null){
                                         }
                                     );
 
-                                    // Add a text input for the qty
-                                    form.add(
-                                        {
-                                            class: {
-                                                field: 'col-12 col-md-6',
-                                            },
-                                            name: 'qty',
-                                            label: builder.Locale.get('QTY'),
-                                            icon: 'hash',
-                                            type: 'number',
-                                            value: builder.Storage.get('qty','service:'+id) || 1,
-                                        },
-                                    );
-
                                     // Add a float input for the price/rate
                                     form.add(
                                         {
                                             class: {
-                                                field: 'col-12 col-md-6',
+                                                field: 'col-12',
                                             },
                                             name: product.inColumn,
-                                            label: builder.Locale.get('Price/Rate'),
-                                            icon: 'currency-dollar',
+                                            label: builder.Locale.get('Rate'),
+                                            icon: 'percent',
                                             type: 'number',
                                             value: (service.rate * 100) || 0,
                                         },
@@ -657,9 +643,6 @@ const ServicesFeed = function(items, container, fields = {}, records = {}, callb
             return element.prop('outerHTML');
         }},
     ];
-
-    // Add a row
-    function addRow(){}
 
     // Create the table
     var component = builder.Component(
