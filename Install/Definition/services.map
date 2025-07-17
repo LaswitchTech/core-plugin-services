@@ -40,14 +40,6 @@
         "Extra": ""
     },
     "5": {
-        "Field": "serialNumber",
-        "Type": "varchar(255)",
-        "Null": "YES",
-        "Key": "",
-        "Default": null,
-        "Extra": ""
-    },
-    "6": {
         "Field": "rate",
         "Type": "double",
         "Null": "YES",
@@ -55,15 +47,7 @@
         "Default": null,
         "Extra": ""
     },
-    "7": {
-        "Field": "currency",
-        "Type": "varchar(255)",
-        "Null": "YES",
-        "Key": "",
-        "Default": null,
-        "Extra": ""
-    },
-    "8": {
+    "6": {
         "Field": "commissions",
         "Type": "json",
         "Null": "YES",
@@ -71,7 +55,7 @@
         "Default": null,
         "Extra": ""
     },
-    "9": {
+    "7": {
         "Field": "agreement",
         "Type": "bigint(20)",
         "Null": "YES",
@@ -79,7 +63,7 @@
         "Default": null,
         "Extra": ""
     },
-    "10": {
+    "8": {
         "Field": "organization",
         "Type": "bigint(20)",
         "Null": "YES",
@@ -87,7 +71,7 @@
         "Default": null,
         "Extra": ""
     },
-    "11": {
+    "9": {
         "Field": "isActive",
         "Type": "int(1)",
         "Null": "YES",
@@ -95,7 +79,7 @@
         "Default": "1",
         "Extra": ""
     },
-    "12": {
+    "10": {
         "Field": "isArchived",
         "Type": "int(1)",
         "Null": "YES",
@@ -103,7 +87,7 @@
         "Default": "0",
         "Extra": ""
     },
-    "13": {
+    "11": {
         "Field": "targetTable",
         "Type": "varchar(255)",
         "Null": "YES",
@@ -111,7 +95,7 @@
         "Default": null,
         "Extra": ""
     },
-    "14": {
+    "12": {
         "Field": "targetId",
         "Type": "bigint(20)",
         "Null": "YES",
