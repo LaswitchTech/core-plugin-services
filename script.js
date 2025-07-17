@@ -140,7 +140,7 @@ const ServicesModal = function(id, callback = null){
                                             var currentValues = form.val();
                                             currentValues.commissions = [];
                                             currentValues[product.inColumn] = parseInt((currentValues[product.inColumn] * 100));
-                                            var currentCap = Math.min(commissionCap, currentValues[product.inColumn]);
+                                            var currentCap = Math.min(product.commissionCap, currentValues[product.inColumn]);
                                             var commissionCurrent = 0;
                                             for(const [key, item] of Object.entries(component.list.get())){
                                                 commissionCurrent += parseInt((item.commission.rate * 100));
@@ -273,7 +273,7 @@ const ServicesModal = function(id, callback = null){
                                             callback: function(tool,list){
                                                 var currentValues = component.form.val();
                                                 currentValues[product.inColumn] = parseInt((currentValues[product.inColumn] * 100));
-                                                var currentCap = Math.min(commissionCap, currentValues[product.inColumn]);
+                                                var currentCap = Math.min(product.commissionCap, currentValues[product.inColumn]);
                                                 var commissionCurrent = 0;
                                                 for(const [key, item] of Object.entries(list.get())){
                                                     commissionCurrent += parseInt((item.commission.rate * 100));
@@ -406,7 +406,7 @@ const ServicesModal = function(id, callback = null){
                                                                                 input.addClass('mt-3');
                                                                                 input.input.attr('step', 1);
                                                                                 input.input.attr('min', 0);
-                                                                                input.input.attr('max', commissionMax);
+                                                                                input.input.attr('max', (product.commissionCap > service.rate) ? product.commissionCap - commissionCurrent : service.rate - commissionCurrent);
                                                                             }
                                                                         );
 
