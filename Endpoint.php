@@ -314,6 +314,6 @@ class ServicesEndpoint extends BaseEndpoint {
      */
     public function capAction(): array
     {
-        return ["status" => 200, "message" => "OK", "data" => (($this->Config->get('application','caps') ?? [])['commissions'] ?? 0)];
+        return ["status" => 200, "message" => "OK", "data" => ['cap' => $this->Auth->user()->organization()->commissionCap ?? 100]];
     }
 }
