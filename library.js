@@ -423,6 +423,11 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                     'data-bs-title': (commission.rate * 100) + '%',
                 }).html('<i class="bi bi-person me-1"></i>'+commission.user.username).appendTo(service.card.body.badges);
             }
+            if(record.agreement.name !== null){
+                service.card.download.removeClass('d-none');
+            } else {
+                service.card.download.addClass('d-none');
+            }
         }
 
         // Check if record is provided
