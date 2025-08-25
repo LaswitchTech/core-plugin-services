@@ -412,7 +412,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
 
             // Update the service information
             service.card.body.info.container.name.text(record.product.name);
-            service.card.body.info.container.title.text(((record.rate ?? 0) * 100) + '%');
+            service.card.body.info.container.sbtle.rate.text(((record.rate ?? 0) * 100) + '%');
             service.card.body.badges.empty();
             for(const [key, commission] of Object.entries(record.commissions ?? {})){
                 $(document.createElement('span')).attr({
