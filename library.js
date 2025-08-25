@@ -497,12 +497,19 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                                     // Show the modal spinner
                                                                     modal.spinner(true);
 
-                                                                    // Create the vCard
+                                                                    // Set form data
+                                                                    var values = form.val();
+                                                                    delete values.agreement;
+
+                                                                    // AJAX Request - Update the service (except file)
                                                                     $.ajax({
                                                                         url: '/api/services/update?id='+serviceRecord.id,
                                                                         headers: {'X-CSRF-Authorization': CSRF_KEY},
                                                                         type: 'POST',dataType: 'json',
-                                                                        data: form.val(),
+                                                                        data: values,
+                                                                        error: function(xhr, status, error) {
+                                                                            console.error('Error updating service:', error);
+                                                                        },
                                                                         success: function(response) {
 
                                                                             // Add the new vCard to the services
