@@ -322,14 +322,15 @@ builder.add('widgets','services', class extends builder.ComponentClass {
         service.card = $(document.createElement('div')).addClass('card h-100 card-hover').appendTo(service);
         service.card.body = $(document.createElement('div')).addClass('card-body').appendTo(service.card);
 
-        // Add vCard information
+        // Add Service information
         service.card.body.info = $(document.createElement('div')).addClass('d-flex align-items-center gap-3').appendTo(service.card.body);
         service.card.body.info.icon = $(document.createElement('div')).attr({
             'class':'service-icon',
         }).html('<i class="bi bi-box2 fs-4"></i>').appendTo(service.card.body.info);
         service.card.body.info.container = $(document.createElement('div')).addClass('flex-grow-1').appendTo(service.card.body.info);
         service.card.body.info.container.name = $(document.createElement('div')).addClass('d-flex align-items-center gap-2 flex-wrap').text(record.product.name).appendTo(service.card.body.info.container);
-        service.card.body.info.container.title = $(document.createElement('div')).addClass('small text-secondary').text(((record.rate ?? 0) * 100)+'%').appendTo(service.card.body.info.container);
+        service.card.body.info.container.sbtle = $(document.createElement('div')).addClass('small').appendTo(service.card.body.info.container);
+        service.card.body.info.container.sbtle.rate = $(document.createElement('span')).addClass('text-secondary').text(((record.rate ?? 0) * 100)+'%').appendTo(service.card.body.info.container.sbtle);
         service.card.body.badges = $(document.createElement('div')).addClass('mt-2 d-flex flex-wrap gap-2').appendTo(service.card.body);
         for(const [key, commission] of Object.entries(record.commissions ?? {})){
             $(document.createElement('span')).attr({
