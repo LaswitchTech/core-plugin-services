@@ -348,6 +348,30 @@ builder.add('widgets','services', class extends builder.ComponentClass {
             self.edit(record.id);
         });
 
+        // Add downloads button
+        service.card.download = $(document.createElement('button')).attr({
+            'type': 'button',
+            'class': 'btn btn-light'+(record.agreement.name !== null ? '' : ' d-none'),
+        }).html('<i class="bi bi-download"></i>').appendTo(service.card);
+        service.card.download.hover(function(){
+            $(this).removeClass('btn-light').addClass('btn-primary');
+        }, function(){
+            $(this).removeClass('btn-primary').addClass('btn-light');
+        }).click(function(){
+
+            // Create a hidden link element
+            const link = document.createElement('a');
+            link.href = '/files/get?uuid='+record.agreement.uuid+'&download';
+            link.download = record.agreement.name;
+            document.body.appendChild(link);
+
+            // Programmatically click the link to trigger the download
+            link.click();
+
+            // Remove the link from the document
+            document.body.removeChild(link);
+        });
+
         // Add archive button
         service.card.archive = $(document.createElement('button')).attr({
             'type': 'button',
