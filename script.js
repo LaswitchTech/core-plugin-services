@@ -108,7 +108,7 @@ const ServicesModal = function(id, callback = null){
                         },
                         function(modal,component){
                             const componentModal = component;
-                            component.header.addClass('text-bg-primary');
+                            component.addClass('modal-primary');
                             component.body.addClass('p-0');
                             component.footer.submit
                                 .addClass('btn-success')
@@ -312,7 +312,7 @@ const ServicesModal = function(id, callback = null){
                                                         },
                                                         function(modal,component){
                                                             const componentModal = component;
-                                                            component.header.addClass('text-bg-primary');
+                                                            component.addClass('modal-primary');
                                                             component.body.addClass('bg-dark');
                                                             component.footer.submit
                                                                 .addClass('btn-success')
@@ -513,7 +513,7 @@ const ServicesModalArchive = function(id, callback = null){
                     const componentModal = component;
 
                     // Style the modal
-                    component.header.addClass('text-bg-dark');
+                    component.addClass('modal-dark');
                     component.footer.submit.addClass('btn-dark').removeClass('btn-link').attr({
                         "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
                     }).text(builder.Locale.get('Archive'));

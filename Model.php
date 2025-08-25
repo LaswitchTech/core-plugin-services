@@ -62,7 +62,7 @@ class ServicesModel extends BaseModel {
             ->index($this->primary)
             ->filter()
             ->where('id', 9999, '<>')
-            ->where('j__product.type', "Service", '=')
+            ->where('product.type', "Service", '=')
             ->where('organization', $this->Auth->user()->organization()->id);
 
         // Check if the conditions are empty
@@ -109,7 +109,7 @@ class ServicesModel extends BaseModel {
             ->join('organization', 'organizations', 'id')
             ->filter()
             ->where('id', 9999, '<>')
-            ->where('j__product.type', "Service", '=')
+            ->where('product.type', "Service", '=')
             ->where('organization', $this->Auth->user()->organization()->id)
             ->filter()
             ->where($this->primary, $id)
