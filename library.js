@@ -619,7 +619,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                                     'class': 'p-3 py-2 rounded-0 border-top d-flex align-items-center',
                                                                     'data-rate': commission.rate,
                                                                     'data-user': commission.user.id,
-                                                                }).appendTo(component);
+                                                                }).insertAfter(component.controls);
                                                                 object.commission = $(document.createElement('div')).text((commission.rate * 100)+'%').addClass('flex-shrink-1 me-2').appendTo(object);
                                                                 object.userblock = $(document.createElement('div')).attr({
                                                                     'class': 'flex-grow-1 d-flex align-items-center justify-content-start',
