@@ -519,6 +519,57 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                                             modal.hide();
                                                                         }
                                                                     });
+
+                                                                    // Run the file promise
+                                                                    form.val().agreement.then(fileData => {
+
+                                                                        // Check if fileData is an array and has at least one file
+                                                                        if (!Array.isArray(fileData) || fileData.length === 0) {
+                                                                            console.warn('No files selected.');
+                                                                            return;
+                                                                        }
+
+                                                                        // Retrieve the first file
+                                                                        var file = fileData[0];
+
+                                                                        // Add some properties
+                                                                        file.checksum = self._builder.Helper.md5(file.content.split(',')[1]);
+                                                                        file.path = 'services/agreements/';
+                                                                        file.isPublic = 1;
+                                                                        file.targetTable = self._properties.targetTable;
+                                                                        file.targetId = self._properties.targetId;
+
+                                                                        // AJAX Request
+                                                                        $.ajax({
+                                                                            url: '/api/files/upload',
+                                                                            headers: {'X-CSRF-Authorization': CSRF_KEY},
+                                                                            type: 'POST',dataType: 'json',
+                                                                            data: file,
+                                                                            error: function(xhr, status, error) {
+                                                                                console.error('Error uploading agreement:', error);
+                                                                            },
+                                                                            success: function(response) {
+
+                                                                                // AJAX Request
+                                                                                $.ajax({
+                                                                                    url: '/api/services/update?id='+serviceRecord.id,
+                                                                                    headers: {'X-CSRF-Authorization': CSRF_KEY},
+                                                                                    type: 'POST',dataType: 'json',
+                                                                                    data: {agreement: response.record.id},
+                                                                                    error: function(xhr, status, error) {
+                                                                                        console.error('Error updating service with agreement:', error);
+                                                                                    },
+                                                                                    success: function(response) {
+
+                                                                                        // Hide the modal
+                                                                                        modal.hide();
+                                                                                    }
+                                                                                });
+                                                                            }
+                                                                        });
+                                                                    }).catch(error => {
+                                                                        console.error('Error reading files:', error);
+                                                                    });
                                                                 },
                                                             }
                                                         },
@@ -723,6 +774,18 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                                     },
                                                                 );
                                                             });
+
+                                                            // agreement
+                                                            form.add(
+                                                                'file',
+                                                                {
+                                                                    name: 'agreement',
+                                                                    placeholder: self._builder.Locale.get('Upload an agreement'),
+                                                                    class: {
+                                                                        component: 'bg-gray-200 p-3 py-2 rounded-0 border-top',
+                                                                    },
+                                                                },
+                                                            );
 
                                                             // Add a commissions to the component
                                                             for(const [key, commission] of Object.entries(serviceRecord.commissions ?? {})){
