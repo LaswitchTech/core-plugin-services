@@ -29,7 +29,12 @@ class ServicesModel extends BaseModel {
         $record = parent::process($record);
 
         // Check if the record has a task
-        if(array_key_exists('commissions', $record) && is_array($record['commissions'])){
+        if(array_key_exists('commissions', $record)){
+
+            // Decode the JSON fields
+            if(!is_array($record['commissions'])){
+                $record['commissions'] = json_decode($record['commissions'] ?? "[]", true);
+            }
 
             // Loop through each commission in the array
             foreach($record['commissions'] as $commissionKey => $commission){
