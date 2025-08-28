@@ -7,6 +7,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
             default: {},
             targetTable: null,
             targetId: null,
+            render: true,
             interval: 10000,
             autoStart: false,
             callback: {},
@@ -20,6 +21,11 @@ builder.add('widgets','services', class extends builder.ComponentClass {
 
         // Set Self
         const self = this;
+
+        // Check if we should render the component
+        if(!this._properties.render){
+            return;
+        }
 
         // Create Component
         this._component = $(document.createElement('div')).attr({
@@ -296,7 +302,12 @@ builder.add('widgets','services', class extends builder.ComponentClass {
             }
         }
 
-        // Check if the svard already exists
+        // Check if we should render the component
+        if(!this._properties.render){
+            return;
+        }
+
+        // Check if the record already exists
         if(this._services[record.id ?? (this._counter + 1)]){
             this.edit(record.id, record);
             return this;
@@ -952,6 +963,11 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                             }
                                         );
 
+                                        // Check if a value is provided
+                                        if(value){
+                                            form.submit();
+                                        }
+
                                         // Resolve the promise
                                         resolve();
                                     },
@@ -972,7 +988,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
         );
     }
 
-    create(){
+    create(callback = null, value = null){
 
         // Set Self
         const self = this;
@@ -1039,8 +1055,13 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                         data: form.val(),
                                                         success: function(response) {
 
-                                                            // Add the new vCard to the services
+                                                            // Add the new record to the services
                                                             self.add(response.record);
+
+                                                            // If a callback is provided, call it with the response
+                                                            if (typeof callback === 'function') {
+                                                                callback(response);
+                                                            }
 
                                                             // Hide the modal
                                                             modal.hide();
@@ -1105,7 +1126,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                             resolve();
                                         },
                                     );
-                                });
+                                },value);
                             } catch(e) { reject(e); }
                         });
                     },

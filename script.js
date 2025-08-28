@@ -684,61 +684,11 @@ const ServicesFeed = function(items, container, fields = {}, records = {}, callb
 
 // Add a product to the services
 function process_function_ServicesAddProduct(task, value, callback = null){
-
-    var targetTable = task.targetTable;
-    var targetId = task.targetId;
-
-    // Check if the task has a target
-    if(typeof task.target !== 'undefined'){
-        if(typeof task.target.targetTable !== 'undefined'){
-            targetTable = task.target.targetTable;
+    builder.Widget('services',{targetTable: task.root.targetTable,targetId: task.root.targetId,render:false}).create(function(){
+        if(typeof callback === "function"){
+            callback(task, null);
         }
-        if(typeof task.target.targetId !== 'undefined'){
-            targetId = task.target.targetId;
-        }
-    }
-
-    ProductsLookup(value, function(products){
-        console.log(value, products);
-        ProductsSelect(products, function(selection){
-            console.log(selection);
-
-            // Select the product from the products list
-            var product = products[selection.id];
-            console.log(product);
-
-            // Create the item to add to the services
-            var item = {
-                product: product.id,
-                qty: selection.qty || 1,
-                price: 0,
-                rate: 0,
-                currency: 'CAD',
-                commissions: '[]',
-                targetTable: targetTable,
-                targetId: targetId,
-            }
-
-            // Set the price and rate based on the product
-            item[product.inColumn] = selection.rate;
-            console.log(item);
-
-            // AJAX Request
-            $.ajax({
-                url: '/api/services/create',
-                headers: {'X-CSRF-Authorization': CSRF_KEY},
-                type: 'POST',dataType: 'json',
-                data: item,
-                success: function(response) {
-
-                    // If a callback is provided, call it with the response
-                    if (typeof callback === 'function') {
-                        callback(task, value, response.record);
-                    }
-                }
-            });
-        });
-    });
+    },value);
 };
 function process_meta_ServicesAddProduct(key = null){
     const metadata = {
