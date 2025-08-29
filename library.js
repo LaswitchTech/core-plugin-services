@@ -363,8 +363,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
         service.card.download = $(document.createElement('button')).attr({
             'type': 'button',
             'class': 'btn btn-light'+(record.agreement.name !== null ? '' : ' d-none'),
-        }).html('<i class="bi bi-download"></i>').appendTo(service.card);
-        service.card.download.hover(function(){
+        }).html('<i class="bi bi-download"></i>').appendTo(service.card).hover(function(){
             $(this).removeClass('btn-light').addClass('btn-primary');
         }, function(){
             $(this).removeClass('btn-primary').addClass('btn-light');
@@ -372,8 +371,8 @@ builder.add('widgets','services', class extends builder.ComponentClass {
 
             // Create a hidden link element
             const link = document.createElement('a');
-            link.href = '/files/get?uuid='+record.agreement.uuid+'&download';
-            link.download = record.agreement.name;
+            link.href = '/files/get?uuid='+service.data.agreement.uuid+'&download';
+            link.download = service.data.agreement.name;
             document.body.appendChild(link);
 
             // Programmatically click the link to trigger the download
@@ -660,7 +659,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                             component.controls.create = $(document.createElement('button')).attr({
                                                                 'type': 'button',
                                                                 'class': 'btn btn-success w-100',
-                                                            }).html('<i class="bi bi-plus-lg"></i>').appendTo(component.controls);
+                                                            }).html('<i class="bi bi-plus-lg me-2"></i>'+self._builder.Locale.get('Commission')).appendTo(component.controls);
                                                             component.controls.create.click(function(){
 
                                                                 // Create the Modal
