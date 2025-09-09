@@ -460,354 +460,341 @@ builder.add('widgets','services', class extends builder.ComponentClass {
 
                                     // AJAX Request
                                     $.ajax({
-                                        url: '/api/services/cap',
+                                        url: '/api/services/fetch?id=' + id,
                                         headers: {'X-CSRF-Authorization': CSRF_KEY},
                                         type: 'GET',dataType: 'json',
                                         error: function(xhr, status, error) {
-                                            console.error('Error fetching commission cap:', error);
-                                            reject(new Error(self._builder.Locale.get('Failed to fetch commission cap')));
+                                            console.error('Error fetching service:', error);
+                                            reject(new Error(self._builder.Locale.get('Failed to fetch service')));
                                         },
-                                        success: function(commissionCap) {
-                                            commissionCap = commissionCap.cap;
+                                        success: function(response) {
 
-                                            // AJAX Request
-                                            $.ajax({
-                                                url: '/api/services/fetch?id=' + id,
-                                                headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                type: 'GET',dataType: 'json',
-                                                error: function(xhr, status, error) {
-                                                    console.error('Error fetching service:', error);
-                                                    reject(new Error(self._builder.Locale.get('Failed to fetch service')));
-                                                },
-                                                success: function(response) {
+                                            // Set the record
+                                            const serviceRecord = response.record;
+                                            const commissionCap = response.record.product.commissionCap;
 
-                                                    // Set the record
-                                                    const serviceRecord = response.record;
+                                            // Create the Form
+                                            self._builder.Utility(
+                                                'form',
+                                                component.body,
+                                                {
+                                                    callback: {
+                                                        val: function(values){
+                                                            values.commissions = [];
+                                                            component.find('[data-rate]').each(function(){
+                                                                const rate = parseFloat($(this).data('rate')).toFixed(4);
+                                                                const user = $(this).data('user');
+                                                                if(!isNaN(rate) && user){
+                                                                    values.commissions.push({rate: rate, user: user});
+                                                                }
+                                                            });
+                                                            values.rate = (values.rate / 100).toFixed(4);
+                                                            return values;
+                                                        },
+                                                        submit: function(form){
 
-                                                    // Create the Form
-                                                    self._builder.Utility(
-                                                        'form',
-                                                        component.body,
-                                                        {
-                                                            callback: {
-                                                                val: function(values){
-                                                                    values.commissions = [];
-                                                                    component.find('[data-rate]').each(function(){
-                                                                        const rate = parseFloat($(this).data('rate'));
-                                                                        const user = $(this).data('user');
-                                                                        if(!isNaN(rate) && user){
-                                                                            values.commissions.push({rate: rate, user: user});
-                                                                        }
-                                                                    });
-                                                                    values.rate = (values.rate / 100).toFixed(2);
-                                                                    return values;
+                                                            // Show the modal spinner
+                                                            modal.spinner(true);
+
+                                                            // Set form data
+                                                            var values = form.val();
+                                                            delete values.agreement;
+
+                                                            // AJAX Request - Update the service (except file)
+                                                            $.ajax({
+                                                                url: '/api/services/update?id='+serviceRecord.id,
+                                                                headers: {'X-CSRF-Authorization': CSRF_KEY},
+                                                                type: 'POST',dataType: 'json',
+                                                                data: values,
+                                                                error: function(xhr, status, error) {
+                                                                    console.error('Error updating service:', error);
                                                                 },
-                                                                submit: function(form){
+                                                                success: function(response) {
 
-                                                                    // Show the modal spinner
-                                                                    modal.spinner(true);
+                                                                    // Add the new vCard to the services
+                                                                    update(self._services[id], response.record);
 
-                                                                    // Set form data
-                                                                    var values = form.val();
-                                                                    delete values.agreement;
+                                                                    // Hide the modal
+                                                                    modal.hide();
+                                                                }
+                                                            });
 
-                                                                    // AJAX Request - Update the service (except file)
-                                                                    $.ajax({
-                                                                        url: '/api/services/update?id='+serviceRecord.id,
-                                                                        headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                                        type: 'POST',dataType: 'json',
-                                                                        data: values,
-                                                                        error: function(xhr, status, error) {
-                                                                            console.error('Error updating service:', error);
-                                                                        },
-                                                                        success: function(response) {
+                                                            // Run the file promise
+                                                            form.val().agreement.then(fileData => {
 
-                                                                            // Add the new vCard to the services
-                                                                            update(self._services[id], response.record);
+                                                                // Check if fileData is an array and has at least one file
+                                                                if (!Array.isArray(fileData) || fileData.length === 0) {
+                                                                    console.warn('No files selected.');
+                                                                    return;
+                                                                }
 
-                                                                            // Hide the modal
-                                                                            modal.hide();
-                                                                        }
-                                                                    });
+                                                                // Retrieve the first file
+                                                                var file = fileData[0];
 
-                                                                    // Run the file promise
-                                                                    form.val().agreement.then(fileData => {
+                                                                // Add some properties
+                                                                file.checksum = self._builder.Helper.md5(file.content.split(',')[1]);
+                                                                file.path = 'services/agreements/';
+                                                                file.isPublic = 1;
+                                                                file.targetTable = self._properties.targetTable;
+                                                                file.targetId = self._properties.targetId;
 
-                                                                        // Check if fileData is an array and has at least one file
-                                                                        if (!Array.isArray(fileData) || fileData.length === 0) {
-                                                                            console.warn('No files selected.');
-                                                                            return;
-                                                                        }
-
-                                                                        // Retrieve the first file
-                                                                        var file = fileData[0];
-
-                                                                        // Add some properties
-                                                                        file.checksum = self._builder.Helper.md5(file.content.split(',')[1]);
-                                                                        file.path = 'services/agreements/';
-                                                                        file.isPublic = 1;
-                                                                        file.targetTable = self._properties.targetTable;
-                                                                        file.targetId = self._properties.targetId;
+                                                                // AJAX Request
+                                                                $.ajax({
+                                                                    url: '/api/files/upload',
+                                                                    headers: {'X-CSRF-Authorization': CSRF_KEY},
+                                                                    type: 'POST',dataType: 'json',
+                                                                    data: file,
+                                                                    error: function(xhr, status, error) {
+                                                                        console.error('Error uploading agreement:', error);
+                                                                    },
+                                                                    success: function(response) {
 
                                                                         // AJAX Request
                                                                         $.ajax({
-                                                                            url: '/api/files/upload',
+                                                                            url: '/api/services/update?id='+serviceRecord.id,
                                                                             headers: {'X-CSRF-Authorization': CSRF_KEY},
                                                                             type: 'POST',dataType: 'json',
-                                                                            data: file,
+                                                                            data: {agreement: response.record.id},
                                                                             error: function(xhr, status, error) {
-                                                                                console.error('Error uploading agreement:', error);
+                                                                                console.error('Error updating service with agreement:', error);
                                                                             },
                                                                             success: function(response) {
 
+                                                                                // Hide the modal
+                                                                                modal.hide();
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                });
+                                                            }).catch(error => {
+                                                                console.error('Error reading files:', error);
+                                                            });
+                                                        },
+                                                    }
+                                                },
+                                                function(form,component){
+
+                                                    // Add event listener on the modal submit button
+                                                    parent.content.footer.submit.click(function(e){
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        form.submit();
+                                                    });
+
+                                                    // rate
+                                                    form.add(
+                                                        'number',
+                                                        {
+                                                            name: 'rate',
+                                                            label: self._builder.Locale.get('Rate'),
+                                                            placeholder: self._builder.Locale.get('Enter a rate'),
+                                                            required: true,
+                                                            value: (serviceRecord.rate * 100).toFixed(2),
+                                                            class: {
+                                                                component: 'bg-gray-200 p-3 py-2 rounded-0 border-bottom',
+                                                            },
+                                                        },
+                                                        function(input){
+                                                            input._component.input.attr({
+                                                                'step':'1',
+                                                                'max':'100',
+                                                                'min':'0',
+                                                            });
+                                                        }
+                                                    );
+
+                                                    // Calculate the commission cap
+                                                    function calc() {
+                                                        var cap = commissionCap;
+                                                        for(const [key, commission] of Object.entries(form.val().commissions ?? [])){
+                                                            cap -= parseInt((commission.rate * 100).toFixed(0));
+                                                        }
+                                                        return cap;
+                                                    }
+
+                                                    // Add a commission to the component
+                                                    function add(commission) {
+                                                        const object = $(document.createElement('div')).attr({
+                                                            'class': 'p-3 py-2 rounded-0 border-top d-flex align-items-center',
+                                                            'data-rate': commission.rate,
+                                                            'data-user': commission.user.id,
+                                                        }).insertAfter(component.controls);
+                                                        object.commission = $(document.createElement('div')).text((commission.rate * 100)+'%').addClass('flex-shrink-1 me-2').appendTo(object);
+                                                        object.userblock = $(document.createElement('div')).attr({
+                                                            'class': 'flex-grow-1 d-flex align-items-center justify-content-start',
+                                                        }).appendTo(object);
+                                                        object.userblock.avatar = $(document.createElement('img')).attr({
+                                                            'src': '/avatar?id='+commission.user.vcard.id,
+                                                            'class': 'avatar rounded-circle border',
+                                                            'alt': commission.user.vcard.name,
+                                                            'style': 'width: 32px; height: 32px;',
+                                                        }).appendTo(object.userblock);
+                                                        object.userblock.username = $(document.createElement('span')).addClass('ms-2 cursor-default').text(commission.user.username).appendTo(object.userblock);
+                                                        object.delete = $(document.createElement('button')).attr({
+                                                            'type': 'button',
+                                                            'class': 'btn btn-light',
+                                                        }).html('<i class="bi bi-trash"></i>').appendTo(object);
+                                                        object.delete.hover(function(){
+                                                            $(this).removeClass('btn-light').addClass('btn-danger');
+                                                        }, function(){
+                                                            $(this).removeClass('btn-danger').addClass('btn-light');
+                                                        }).click(function(){
+                                                            object.remove();
+                                                        });
+                                                    }
+
+                                                    // Add a create commission button
+                                                    component.controls = $(document.createElement('div')).addClass('bg-gray-200 p-3 py-2 rounded-0').appendTo(component);
+                                                    component.controls.create = $(document.createElement('button')).attr({
+                                                        'type': 'button',
+                                                        'class': 'btn btn-success w-100',
+                                                    }).html('<i class="bi bi-plus-lg me-2"></i>'+self._builder.Locale.get('Commission')).appendTo(component.controls);
+                                                    component.controls.create.click(function(){
+
+                                                        // Create the Modal
+                                                        self._builder.Component(
+                                                            "modal",
+                                                            {
+                                                                icon: "percent",
+                                                                title: self._builder.Locale.get("Commission"),
+                                                                color: 'success',
+                                                                callback: {
+                                                                    load: function(component, modal){
+                                                                        return new Promise((resolve, reject) => {
+                                                                            try {
+
+                                                                                // Set the parent
+                                                                                const modalParent = component.dialog;
+
                                                                                 // AJAX Request
                                                                                 $.ajax({
-                                                                                    url: '/api/services/update?id='+serviceRecord.id,
-                                                                                    headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                                                    type: 'POST',dataType: 'json',
-                                                                                    data: {agreement: response.record.id},
+                                                                                    url: '/api/auth/users',
+                                                                                    type: 'GET',dataType: 'json',
                                                                                     error: function(xhr, status, error) {
-                                                                                        console.error('Error updating service with agreement:', error);
+                                                                                        console.error('Error fetching users:', error);
+                                                                                        reject(new Error(self._builder.Locale.get('Failed to fetch users')));
                                                                                     },
                                                                                     success: function(response) {
 
-                                                                                        // Hide the modal
-                                                                                        modal.hide();
-                                                                                    }
-                                                                                });
-                                                                            }
-                                                                        });
-                                                                    }).catch(error => {
-                                                                        console.error('Error reading files:', error);
-                                                                    });
-                                                                },
-                                                            }
-                                                        },
-                                                        function(form,component){
+                                                                                        const members = response.records;
+                                                                                        const options = [];
+                                                                                        for(const [id, member] of Object.entries(members)){
+                                                                                            options.push({id: id, text: member.username});
+                                                                                        }
 
-                                                            // Add event listener on the modal submit button
-                                                            parent.content.footer.submit.click(function(e){
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                form.submit();
-                                                            });
+                                                                                        // Create the Form
+                                                                                        self._builder.Utility(
+                                                                                            'form',
+                                                                                            component.body,
+                                                                                            {
+                                                                                                callback: {
+                                                                                                    val: function(values){
+                                                                                                        values.user = members[values.assignedTo];
+                                                                                                        delete values.assignedTo;
+                                                                                                        values.rate = parseFloat((values.rate / 100).toFixed(4));
+                                                                                                        return values;
+                                                                                                    },
+                                                                                                    submit: function(form){
 
-                                                            // rate
-                                                            form.add(
-                                                                'number',
-                                                                {
-                                                                    name: 'rate',
-                                                                    label: self._builder.Locale.get('Rate'),
-                                                                    placeholder: self._builder.Locale.get('Enter a rate'),
-                                                                    required: true,
-                                                                    value: (serviceRecord.rate * 100).toFixed(2),
-                                                                    class: {
-                                                                        component: 'bg-gray-200 p-3 py-2 rounded-0 border-bottom',
-                                                                    },
-                                                                },
-                                                                function(input){
-                                                                    input._component.input.attr({
-                                                                        'step':'1',
-                                                                        'max':'100',
-                                                                        'min':'0',
-                                                                    });
-                                                                }
-                                                            );
+                                                                                                        // Show the modal spinner
+                                                                                                        modal.spinner(true);
 
-                                                            // Calculate the commission cap
-                                                            function calc() {
-                                                                var cap = commissionCap;
-                                                                for(const [key, commission] of Object.entries(form.val().commissions ?? [])){
-                                                                    cap -= parseInt((commission.rate * 100).toFixed(0));
-                                                                }
-                                                                return cap;
-                                                            }
+                                                                                                        // Add the commission to the form
+                                                                                                        add(form.val());
 
-                                                            // Add a commission to the component
-                                                            function add(commission) {
-                                                                const object = $(document.createElement('div')).attr({
-                                                                    'class': 'p-3 py-2 rounded-0 border-top d-flex align-items-center',
-                                                                    'data-rate': commission.rate,
-                                                                    'data-user': commission.user.id,
-                                                                }).insertAfter(component.controls);
-                                                                object.commission = $(document.createElement('div')).text((commission.rate * 100)+'%').addClass('flex-shrink-1 me-2').appendTo(object);
-                                                                object.userblock = $(document.createElement('div')).attr({
-                                                                    'class': 'flex-grow-1 d-flex align-items-center justify-content-start',
-                                                                }).appendTo(object);
-                                                                object.userblock.avatar = $(document.createElement('img')).attr({
-                                                                    'src': '/avatar?id='+commission.user.vcard.id,
-                                                                    'class': 'avatar rounded-circle border',
-                                                                    'alt': commission.user.vcard.name,
-                                                                    'style': 'width: 32px; height: 32px;',
-                                                                }).appendTo(object.userblock);
-                                                                object.userblock.username = $(document.createElement('span')).addClass('ms-2 cursor-default').text(commission.user.username).appendTo(object.userblock);
-                                                                object.delete = $(document.createElement('button')).attr({
-                                                                    'type': 'button',
-                                                                    'class': 'btn btn-light',
-                                                                }).html('<i class="bi bi-trash"></i>').appendTo(object);
-                                                                object.delete.hover(function(){
-                                                                    $(this).removeClass('btn-light').addClass('btn-danger');
-                                                                }, function(){
-                                                                    $(this).removeClass('btn-danger').addClass('btn-light');
-                                                                }).click(function(){
-                                                                    object.remove();
-                                                                });
-                                                            }
-
-                                                            // Add a create commission button
-                                                            component.controls = $(document.createElement('div')).addClass('bg-gray-200 p-3 py-2 rounded-0').appendTo(component);
-                                                            component.controls.create = $(document.createElement('button')).attr({
-                                                                'type': 'button',
-                                                                'class': 'btn btn-success w-100',
-                                                            }).html('<i class="bi bi-plus-lg me-2"></i>'+self._builder.Locale.get('Commission')).appendTo(component.controls);
-                                                            component.controls.create.click(function(){
-
-                                                                // Create the Modal
-                                                                self._builder.Component(
-                                                                    "modal",
-                                                                    {
-                                                                        icon: "percent",
-                                                                        title: self._builder.Locale.get("Commission"),
-                                                                        color: 'success',
-                                                                        callback: {
-                                                                            load: function(component, modal){
-                                                                                return new Promise((resolve, reject) => {
-                                                                                    try {
-
-                                                                                        // Set the parent
-                                                                                        const modalParent = component.dialog;
-
-                                                                                        // AJAX Request
-                                                                                        $.ajax({
-                                                                                            url: '/api/auth/users',
-                                                                                            type: 'GET',dataType: 'json',
-                                                                                            error: function(xhr, status, error) {
-                                                                                                console.error('Error fetching users:', error);
-                                                                                                reject(new Error(self._builder.Locale.get('Failed to fetch users')));
-                                                                                            },
-                                                                                            success: function(response) {
-
-                                                                                                const members = response.records;
-                                                                                                const options = [];
-                                                                                                for(const [id, member] of Object.entries(members)){
-                                                                                                    options.push({id: id, text: member.username});
+                                                                                                        // Close the modal
+                                                                                                        modal.hide();
+                                                                                                    },
                                                                                                 }
-
-                                                                                                // Create the Form
-                                                                                                self._builder.Utility(
-                                                                                                    'form',
-                                                                                                    component.body,
-                                                                                                    {
-                                                                                                        callback: {
-                                                                                                            val: function(values){
-                                                                                                                values.user = members[values.assignedTo];
-                                                                                                                delete values.assignedTo;
-                                                                                                                values.rate = parseFloat((values.rate / 100).toFixed(2));
-                                                                                                                return values;
-                                                                                                            },
-                                                                                                            submit: function(form){
-
-                                                                                                                // Show the modal spinner
-                                                                                                                modal.spinner(true);
-
-                                                                                                                // Add the commission to the form
-                                                                                                                add(form.val());
-
-                                                                                                                // Close the modal
-                                                                                                                modal.hide();
-                                                                                                            },
-                                                                                                        }
-                                                                                                    },
-                                                                                                    function(form,component){
-
-                                                                                                        // Add event listener on the modal submit button
-                                                                                                        modalParent.content.footer.submit.click(function(e){
-                                                                                                            e.preventDefault();
-                                                                                                            e.stopPropagation();
-                                                                                                            form.submit();
-                                                                                                        });
-
-                                                                                                        // assignedTo
-                                                                                                        form.add(
-                                                                                                            'select2',
-                                                                                                            {
-                                                                                                                name: 'assignedTo',
-                                                                                                                label: self._builder.Locale.get('User'),
-                                                                                                                placeholder: self._builder.Locale.get('Select a user'),
-                                                                                                                class: {
-                                                                                                                    component: 'bg-gray-200 p-3 py-2 rounded-0',
-                                                                                                                },
-                                                                                                                options: options,
-                                                                                                            }
-                                                                                                        );
-
-                                                                                                        // rate
-                                                                                                        form.add(
-                                                                                                            'number',
-                                                                                                            {
-                                                                                                                name: 'rate',
-                                                                                                                label: self._builder.Locale.get('Rate'),
-                                                                                                                placeholder: self._builder.Locale.get('Enter a rate'),
-                                                                                                                required: true,
-                                                                                                                value: calc(),
-                                                                                                                class: {
-                                                                                                                    component: 'bg-gray-200 p-3 pb-2 pt-0 rounded-0',
-                                                                                                                },
-                                                                                                            },
-                                                                                                            function(input){
-                                                                                                                input._component.input.attr({
-                                                                                                                    'step':'1',
-                                                                                                                    'max': calc(),
-                                                                                                                    'min':'0',
-                                                                                                                });
-                                                                                                            }
-                                                                                                        );
-
-                                                                                                        // Resolve the promise
-                                                                                                        resolve();
-                                                                                                    },
-                                                                                                );
                                                                                             },
-                                                                                        });
-                                                                                    } catch(e) { reject(e); }
+                                                                                            function(form,component){
+
+                                                                                                // Add event listener on the modal submit button
+                                                                                                modalParent.content.footer.submit.click(function(e){
+                                                                                                    e.preventDefault();
+                                                                                                    e.stopPropagation();
+                                                                                                    form.submit();
+                                                                                                });
+
+                                                                                                // assignedTo
+                                                                                                form.add(
+                                                                                                    'select2',
+                                                                                                    {
+                                                                                                        name: 'assignedTo',
+                                                                                                        label: self._builder.Locale.get('User'),
+                                                                                                        placeholder: self._builder.Locale.get('Select a user'),
+                                                                                                        class: {
+                                                                                                            component: 'bg-gray-200 p-3 py-2 rounded-0',
+                                                                                                        },
+                                                                                                        options: options,
+                                                                                                    }
+                                                                                                );
+
+                                                                                                // rate
+                                                                                                form.add(
+                                                                                                    'number',
+                                                                                                    {
+                                                                                                        name: 'rate',
+                                                                                                        label: self._builder.Locale.get('Rate'),
+                                                                                                        placeholder: self._builder.Locale.get('Enter a rate'),
+                                                                                                        required: true,
+                                                                                                        value: calc(),
+                                                                                                        class: {
+                                                                                                            component: 'bg-gray-200 p-3 pb-2 pt-0 rounded-0',
+                                                                                                        },
+                                                                                                    },
+                                                                                                    function(input){
+                                                                                                        input._component.input.attr({
+                                                                                                            'step':'1',
+                                                                                                            'max': calc(),
+                                                                                                            'min':'0',
+                                                                                                        });
+                                                                                                    }
+                                                                                                );
+
+                                                                                                // Resolve the promise
+                                                                                                resolve();
+                                                                                            },
+                                                                                        );
+                                                                                    },
                                                                                 });
-                                                                            },
-                                                                        },
-                                                                    },
-                                                                    function(modal,component){
-
-                                                                        // Styling
-                                                                        component.body.addClass('p-0');
-
-                                                                        // Show the modal
-                                                                        modal.show();
-                                                                    },
-                                                                );
-                                                            });
-
-                                                            // agreement
-                                                            form.add(
-                                                                'file',
-                                                                {
-                                                                    name: 'agreement',
-                                                                    placeholder: self._builder.Locale.get('Upload an agreement'),
-                                                                    class: {
-                                                                        component: 'bg-gray-200 p-3 py-2 rounded-0 border-top',
+                                                                            } catch(e) { reject(e); }
+                                                                        });
                                                                     },
                                                                 },
-                                                            );
+                                                            },
+                                                            function(modal,component){
 
-                                                            // Add a commissions to the component
-                                                            for(const [key, commission] of Object.entries(serviceRecord.commissions ?? {})){
-                                                                add(commission);
-                                                            }
+                                                                // Styling
+                                                                component.body.addClass('p-0');
 
-                                                            // Resolve the promise
-                                                            resolve();
+                                                                // Show the modal
+                                                                modal.show();
+                                                            },
+                                                        );
+                                                    });
+
+                                                    // agreement
+                                                    form.add(
+                                                        'file',
+                                                        {
+                                                            name: 'agreement',
+                                                            placeholder: self._builder.Locale.get('Upload an agreement'),
+                                                            class: {
+                                                                component: 'bg-gray-200 p-3 py-2 rounded-0 border-top',
+                                                            },
                                                         },
                                                     );
+
+                                                    // Add a commissions to the component
+                                                    for(const [key, commission] of Object.entries(serviceRecord.commissions ?? {})){
+                                                        add(commission);
+                                                    }
+
+                                                    // Resolve the promise
+                                                    resolve();
                                                 },
-                                            });
+                                            );
                                         },
                                     });
                                 } catch(e) { reject(e); }
