@@ -308,12 +308,4 @@ class ServicesEndpoint extends BaseEndpoint {
         // Return the message
         return $message;
     }
-
-    /**
-     * Retrieve the commission cap for the service
-     */
-    public function capAction(): array
-    {
-        return ["status" => 200, "message" => "OK", "data" => ['cap' => $this->Auth->user()->organization()->commissionCap ?? 100]];
-    }
 }
