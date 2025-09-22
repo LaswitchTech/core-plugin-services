@@ -629,7 +629,7 @@ builder.add('widgets','services', class extends builder.ComponentClass {
                                                                             const modalParent = component.dialog;
 
                                                                             // AJAX Request
-                                                                            API.endpoint('/extensions/fetchAll').execute(function(response){
+                                                                            API.endpoint('/auth/users').execute(function(response){
 
                                                                                 const members = response.records;
                                                                                 const options = [];
